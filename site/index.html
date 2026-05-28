@@ -1,40 +1,821 @@
-# CI/CD Pipeline — DevOps + DataOps Portfolio
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevOps & DataOps — Pipeline Portfolio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #080c10;
+      --surface: #0d1117;
+      --surface2: #161b22;
+      --border: #21262d;
+      --accent-green: #39d353;
+      --accent-blue: #58a6ff;
+      --accent-orange: #f0883e;
+      --accent-purple: #bc8cff;
+      --text: #e6edf3;
+      --text-muted: #7d8590;
+      --text-dim: #484f58;
+      --glow-green: rgba(57, 211, 83, 0.15);
+      --glow-blue: rgba(88, 166, 255, 0.15);
+    }
 
-name: Deploy Pipeline
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-on:
-  push:
-    branches: ["main"]
-  pull_request:
-    branches: ["main"]
+    html { scroll-behavior: smooth; }
 
-jobs:
-  quality-gate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run data quality tests
-        run: dbt test --profiles-dir . --target ci
-      - name: Validate schemas
-        run: great_expectations checkpoint run my_suite
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
 
-  build-and-push:
-    needs: quality-gate
-    runs-on: ubuntu-latest
-    steps:
-      - name: Build Docker image
-        run: docker build -t $IMAGE_TAG .
-      - name: Security scan
-        uses: aquasecurity/trivy-action@master
-      - name: Push to registry
-        run: docker push $IMAGE_TAG
+    /* ── GRID BACKGROUND ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(57,211,83,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(57,211,83,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
 
-  deploy:
-    needs: build-and-push
-    environment: production
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy to Kubernetes
-        run: kubectl apply -f k8s/ --record
-      - name: Trigger Airflow DAG
-        run: airflow dags trigger data_pipeline_dag
+    /* ── SCANLINE OVERLAY ── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.04) 2px,
+        rgba(0,0,0,0.04) 4px
+      );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── LAYOUT ── */
+    .container { max-width: 960px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky;
+      top: 0;
+      background: rgba(8,12,16,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      z-index: 100;
+      padding: 14px 0;
+    }
+    nav .inner {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1rem;
+      color: var(--accent-green);
+      letter-spacing: 0.05em;
+    }
+    .nav-logo span { color: var(--text-muted); }
+    .nav-links { display: flex; gap: 24px; list-style: none; }
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--accent-green); }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 100px 0 80px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-eyebrow {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent-green);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: fadeUp 0.6s ease both;
+    }
+    .hero-eyebrow::before {
+      content: '';
+      display: inline-block;
+      width: 24px;
+      height: 1px;
+      background: var(--accent-green);
+    }
+    .hero h1 {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: clamp(2.2rem, 6vw, 4rem);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      animation: fadeUp 0.6s 0.1s ease both;
+    }
+    .hero h1 .line-devops { color: var(--accent-green); }
+    .hero h1 .line-dataops { color: var(--accent-blue); }
+    .hero-sub {
+      margin-top: 24px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      max-width: 540px;
+      animation: fadeUp 0.6s 0.2s ease both;
+    }
+    .hero-tags {
+      margin-top: 32px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      animation: fadeUp 0.6s 0.3s ease both;
+    }
+    .tag {
+      font-size: 0.65rem;
+      padding: 4px 10px;
+      border-radius: 3px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border: 1px solid;
+    }
+    .tag-green { border-color: var(--accent-green); color: var(--accent-green); background: var(--glow-green); }
+    .tag-blue  { border-color: var(--accent-blue);  color: var(--accent-blue);  background: var(--glow-blue); }
+    .tag-orange{ border-color: var(--accent-orange); color: var(--accent-orange); background: rgba(240,136,62,0.12);}
+    .tag-purple{ border-color: var(--accent-purple); color: var(--accent-purple); background: rgba(188,140,255,0.12);}
+
+    /* ── PIPELINE VISUALIZATION ── */
+    .pipeline-section {
+      padding: 60px 0;
+      animation: fadeUp 0.6s 0.35s ease both;
+    }
+    .section-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+    .pipeline {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      overflow-x: auto;
+      padding: 8px 0;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .pipeline-stage {
+      flex-shrink: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px 18px;
+      min-width: 120px;
+      text-align: center;
+      cursor: default;
+      transition: all 0.25s;
+      position: relative;
+    }
+    .pipeline-stage:hover {
+      border-color: var(--accent-green);
+      box-shadow: 0 0 20px var(--glow-green);
+      transform: translateY(-2px);
+    }
+    .pipeline-stage.active { border-color: var(--accent-green); box-shadow: 0 0 16px var(--glow-green); }
+    .pipeline-stage.data  { }
+    .pipeline-stage.data:hover { border-color: var(--accent-blue); box-shadow: 0 0 20px var(--glow-blue); }
+    .stage-icon { font-size: 1.2rem; margin-bottom: 6px; }
+    .stage-name { font-size: 0.65rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+    .stage-status {
+      font-size: 0.6rem;
+      margin-top: 4px;
+      color: var(--accent-green);
+    }
+    .pipeline-arrow {
+      flex-shrink: 0;
+      color: var(--text-dim);
+      font-size: 0.8rem;
+      padding: 0 4px;
+    }
+
+    /* ── TWO-COLUMN CARDS ── */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      padding: 60px 0;
+    }
+    @media (max-width: 640px) { .cards-grid { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 28px;
+      transition: all 0.3s;
+      animation: fadeUp 0.5s ease both;
+    }
+    .card:hover { transform: translateY(-4px); }
+    .card.devops:hover { border-color: var(--accent-green); box-shadow: 0 8px 32px var(--glow-green); }
+    .card.dataops:hover { border-color: var(--accent-blue); box-shadow: 0 8px 32px var(--glow-blue); }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .card-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+    .card-icon.green { background: var(--glow-green); border: 1px solid rgba(57,211,83,0.3); }
+    .card-icon.blue  { background: var(--glow-blue);  border: 1px solid rgba(88,166,255,0.3); }
+    .card-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+    .card-title.green { color: var(--accent-green); }
+    .card-title.blue  { color: var(--accent-blue); }
+
+    .card-body { font-size: 0.8rem; color: var(--text-muted); line-height: 1.8; }
+
+    .feature-list { margin-top: 16px; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .feature-list li {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .feature-list li::before {
+      content: '▸';
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .card.devops .feature-list li::before { color: var(--accent-green); }
+    .card.dataops .feature-list li::before { color: var(--accent-blue); }
+
+    /* ── STACK SECTION ── */
+    .stack-section { padding: 60px 0; }
+    .stack-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+      margin-top: 28px;
+    }
+    .stack-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      transition: all 0.2s;
+      cursor: default;
+    }
+    .stack-item:hover {
+      border-color: var(--border);
+      background: var(--surface2);
+      color: var(--text);
+    }
+    .stack-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── CI/CD CODE BLOCK ── */
+    .code-section { padding: 60px 0; }
+    .code-window {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 28px;
+    }
+    .code-titlebar {
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot-red    { background: #ff5f56; }
+    .dot-yellow { background: #ffbd2e; }
+    .dot-green  { background: #27c93f; }
+    .code-filename {
+      margin-left: 8px;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+    pre {
+      padding: 24px;
+      font-size: 0.72rem;
+      line-height: 1.7;
+      overflow-x: auto;
+      color: var(--text-muted);
+    }
+    .kw  { color: var(--accent-purple); }
+    .str { color: var(--accent-orange); }
+    .cmt { color: var(--text-dim); font-style: italic; }
+    .key { color: var(--accent-blue); }
+    .val { color: var(--accent-green); }
+
+    /* ── METRICS ROW ── */
+    .metrics { padding: 60px 0; }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-top: 28px;
+    }
+    @media (max-width: 600px) { .metrics-grid { grid-template-columns: repeat(2, 1fr); } }
+    .metric-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px 16px;
+      text-align: center;
+    }
+    .metric-value {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.8rem;
+      line-height: 1;
+    }
+    .metric-label {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-top: 6px;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 0;
+      margin-top: 60px;
+    }
+    footer .inner {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .footer-left {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+    }
+    .footer-left span { color: var(--accent-green); }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--accent-green); }
+
+    /* ── CURSOR BLINK ── */
+    .cursor {
+      display: inline-block;
+      width: 10px;
+      height: 1.2em;
+      background: var(--accent-green);
+      vertical-align: text-bottom;
+      animation: blink 1s step-end infinite;
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .live-dot {
+      display: inline-block;
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      margin-right: 6px;
+      animation: pulse-dot 1.5s ease-in-out infinite;
+      vertical-align: middle;
+    }
+
+    /* stagger cards */
+    .card:nth-child(1) { animation-delay: 0.1s; }
+    .card:nth-child(2) { animation-delay: 0.2s; }
+    .card:nth-child(3) { animation-delay: 0.3s; }
+    .card:nth-child(4) { animation-delay: 0.4s; }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="inner">
+      <div class="nav-logo">PIPELINE<span>.dev</span></div>
+      <ul class="nav-links">
+        <li><a href="#devops">DevOps</a></li>
+        <li><a href="#dataops">DataOps</a></li>
+        <li><a href="#stack">Stack</a></li>
+        <li><a href="#pipeline">CI/CD</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-eyebrow"><span class="live-dot"></span> Deploy automatizado · GitHub Actions</div>
+      <h1>
+        <span class="line-devops">DevOps</span> &amp;<br>
+        <span class="line-dataops">DataOps</span><span class="cursor"></span>
+      </h1>
+      <p class="hero-sub">
+        Portfolio de automação de pipelines CI/CD, infraestrutura como código e engenharia de dados em produção.
+      </p>
+      <div class="hero-tags">
+        <span class="tag tag-green">CI/CD</span>
+        <span class="tag tag-green">GitHub Actions</span>
+        <span class="tag tag-blue">Apache Airflow</span>
+        <span class="tag tag-blue">dbt</span>
+        <span class="tag tag-orange">Docker</span>
+        <span class="tag tag-orange">Kubernetes</span>
+        <span class="tag tag-purple">Terraform</span>
+        <span class="tag tag-purple">Data Quality</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- PIPELINE VISUALIZATION -->
+  <section class="pipeline-section" id="pipeline">
+    <div class="container">
+      <div class="section-label">pipeline de entrega</div>
+      <div class="pipeline">
+        <div class="pipeline-stage active">
+          <div class="stage-icon">📝</div>
+          <div class="stage-name">Commit</div>
+          <div class="stage-status">✓ done</div>
+        </div>
+        <div class="pipeline-arrow">──▸</div>
+        <div class="pipeline-stage active">
+          <div class="stage-icon">🔬</div>
+          <div class="stage-name">Test</div>
+          <div class="stage-status">✓ done</div>
+        </div>
+        <div class="pipeline-arrow">──▸</div>
+        <div class="pipeline-stage active">
+          <div class="stage-icon">🐳</div>
+          <div class="stage-name">Build</div>
+          <div class="stage-status">✓ done</div>
+        </div>
+        <div class="pipeline-arrow">──▸</div>
+        <div class="pipeline-stage active">
+          <div class="stage-icon">🔒</div>
+          <div class="stage-name">Scan</div>
+          <div class="stage-status">✓ done</div>
+        </div>
+        <div class="pipeline-arrow">──▸</div>
+        <div class="pipeline-stage active">
+          <div class="stage-icon">🚀</div>
+          <div class="stage-name">Deploy</div>
+          <div class="stage-status" style="color:var(--accent-green)">✓ live</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CARDS -->
+  <section id="devops" style="padding: 0;">
+    <div class="container">
+      <div class="section-label">disciplinas</div>
+      <div class="cards-grid">
+
+        <!-- DEVOPS CARD -->
+        <div class="card devops">
+          <div class="card-header">
+            <div class="card-icon green">⚙️</div>
+            <div class="card-title green">DevOps</div>
+          </div>
+          <p class="card-body">
+            Cultura de integração entre desenvolvimento e operações, focada em entrega contínua, automação de infraestrutura e observabilidade em produção.
+          </p>
+          <ul class="feature-list">
+            <li>Pipelines CI/CD com GitHub Actions e GitLab CI</li>
+            <li>Containerização com Docker e orquestração Kubernetes</li>
+            <li>Infrastructure as Code com Terraform e Ansible</li>
+            <li>Monitoramento com Prometheus, Grafana e alertas</li>
+            <li>GitOps com ArgoCD e FluxCD</li>
+            <li>Gestão de segredos com Vault e SOPS</li>
+          </ul>
+        </div>
+
+        <!-- DATAOPS CARD -->
+        <div class="card dataops" id="dataops">
+          <div class="card-header">
+            <div class="card-icon blue">📊</div>
+            <div class="card-title blue">DataOps</div>
+          </div>
+          <p class="card-body">
+            Aplicação das práticas DevOps para pipelines de dados: automação, testes, versionamento e entrega confiável de dados em escala.
+          </p>
+          <ul class="feature-list">
+            <li>Orquestração de pipelines com Apache Airflow e Prefect</li>
+            <li>Transformações e testes de dados com dbt</li>
+            <li>Qualidade de dados com Great Expectations e Soda</li>
+            <li>Data lineage e catalogação com DataHub e OpenMetadata</li>
+            <li>Lakehouse com Delta Lake, Iceberg e Apache Hudi</li>
+            <li>CI/CD para dados: deploy, rollback e testes automáticos</li>
+          </ul>
+        </div>
+
+        <!-- OBSERVABILIDADE -->
+        <div class="card devops">
+          <div class="card-header">
+            <div class="card-icon green">📡</div>
+            <div class="card-title green">Observabilidade</div>
+          </div>
+          <p class="card-body">
+            Visibilidade total de sistemas e pipelines através de métricas, logs e rastreamento distribuído.
+          </p>
+          <ul class="feature-list">
+            <li>Stack OpenTelemetry para métricas, logs e traces</li>
+            <li>Dashboards de SLI/SLO e error budgets</li>
+            <li>Alertas inteligentes com redução de ruído</li>
+            <li>Distributed tracing com Jaeger e Tempo</li>
+          </ul>
+        </div>
+
+        <!-- DATA QUALITY -->
+        <div class="card dataops">
+          <div class="card-header">
+            <div class="card-icon blue">🛡️</div>
+            <div class="card-title blue">Data Quality</div>
+          </div>
+          <p class="card-body">
+            Garantia de confiabilidade, consistência e completude dos dados ao longo de todo o ciclo de vida.
+          </p>
+          <ul class="feature-list">
+            <li>Testes unitários e de integração em modelos dbt</li>
+            <li>Validação de schemas e contratos de dados</li>
+            <li>Detecção de anomalias e data freshness checks</li>
+            <li>Data observability com Monte Carlo e Metaplane</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- METRICS -->
+  <section class="metrics">
+    <div class="container">
+      <div class="section-label">métricas do projeto</div>
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-value" style="color:var(--accent-green)">100%</div>
+          <div class="metric-label">Deploy Success</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value" style="color:var(--accent-blue)">~2min</div>
+          <div class="metric-label">Lead Time</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value" style="color:var(--accent-orange)">0</div>
+          <div class="metric-label">Rollbacks</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value" style="color:var(--accent-purple)">∞</div>
+          <div class="metric-label">Automação</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STACK -->
+  <section class="stack-section" id="stack">
+    <div class="container">
+      <div class="section-label">tecnologias utilizadas</div>
+      <div class="stack-grid">
+        <div class="stack-item"><span class="stack-dot" style="background:#f05032"></span> Git / GitHub</div>
+        <div class="stack-item"><span class="stack-dot" style="background:#2088ff"></span> GitHub Actions</div>
+        <div class="stack-item"><span class="stack-dot" style="background:#2496ed"></span> Docker</div>
+        <div class="stack-item"><span class="stack-dot" style="background:#326ce5"></span> Kubernetes</div>
+        <div class="stack-item"><span class="stack-dot" style="background:#7b42bc"></span> Terraform</div>
+        <div class="stack-item"><span class="stack-dot" style="background:#ee0979"></span> Ansible</div>
+        <div class="stack-item"><span class="stack-dot" style="background:#017cee"></span> Airflow</div>
+        <div class="stack-item"><span class="stack-dot" style="background:#ff6b35"></span> dbt</div>
+        <div class="stack-item"><span class="stack-dot" style="background:#e6522c"></span> Prometheus</div>
+        <div class="stack-item"><span class="stack-dot" style="background:#f46800"></span> Grafana</div>
+        <div class="stack-item"><span class="stack-dot" style="background:#39d353"></span> ArgoCD</div>
+        <div class="stack-item"><span class="stack-dot" style="background:#58a6ff"></span> Delta Lake</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CODE BLOCK -->
+  <section class="code-section">
+    <div class="container">
+      <div class="section-label">exemplo de workflow</div>
+      <div class="code-window">
+        <div class="code-titlebar">
+          <span class="dot dot-red"></span>
+          <span class="dot dot-yellow"></span>
+          <span class="dot dot-green"></span>
+          <span class="code-filename">.github/workflows/ci-cd.yml</span>
+        </div>
+        <pre id="yaml-code"></pre>
+        <script>
+          var lines = [
+            ['cmt', '# CI/CD Pipeline — DevOps + DataOps Portfolio'],
+            ['', ''],
+            ['key', 'name'],['raw', ': '],['str', 'Deploy Pipeline'],
+            ['', ''],
+            ['key', 'on'],['raw', ':'],
+            ['raw', '  '],['key', 'push'],['raw', ':'],
+            ['raw', '    '],['key', 'branches'],['raw', ': ['],['str', '"main"'],['raw', ']'],
+            ['raw', '  '],['key', 'pull_request'],['raw', ':'],
+            ['raw', '    '],['key', 'branches'],['raw', ': ['],['str', '"main"'],['raw', ']'],
+            ['', ''],
+            ['key', 'jobs'],['raw', ':'],
+            ['raw', '  '],['key', 'quality-gate'],['raw', ':'],
+            ['raw', '    '],['key', 'runs-on'],['raw', ': '],['str', 'ubuntu-latest'],
+            ['raw', '    '],['key', 'steps'],['raw', ':'],
+            ['raw', '      - '],['key', 'uses'],['raw', ': '],['val', 'actions/checkout@v4'],
+            ['raw', '      - '],['key', 'name'],['raw', ': '],['str', 'Run data quality tests'],
+            ['raw', '        '],['key', 'run'],['raw', ': '],['val', 'dbt test --profiles-dir . --target ci'],
+            ['raw', '      - '],['key', 'name'],['raw', ': '],['str', 'Validate schemas'],
+            ['raw', '        '],['key', 'run'],['raw', ': '],['val', 'great_expectations checkpoint run my_suite'],
+            ['', ''],
+            ['raw', '  '],['key', 'build-and-push'],['raw', ':'],
+            ['raw', '    '],['key', 'needs'],['raw', ': '],['str', 'quality-gate'],
+            ['raw', '    '],['key', 'runs-on'],['raw', ': '],['str', 'ubuntu-latest'],
+            ['raw', '    '],['key', 'steps'],['raw', ':'],
+            ['raw', '      - '],['key', 'name'],['raw', ': '],['str', 'Build Docker image'],
+            ['raw', '        '],['key', 'run'],['raw', ': '],['val', 'docker build -t $IMAGE_TAG .'],
+            ['raw', '      - '],['key', 'name'],['raw', ': '],['str', 'Security scan'],
+            ['raw', '        '],['key', 'uses'],['raw', ': '],['val', 'aquasecurity/trivy-action@master'],
+            ['raw', '      - '],['key', 'name'],['raw', ': '],['str', 'Push to registry'],
+            ['raw', '        '],['key', 'run'],['raw', ': '],['val', 'docker push $IMAGE_TAG'],
+            ['', ''],
+            ['raw', '  '],['key', 'deploy'],['raw', ':'],
+            ['raw', '    '],['key', 'needs'],['raw', ': '],['str', 'build-and-push'],
+            ['raw', '    '],['key', 'environment'],['raw', ': '],['str', 'production'],
+            ['raw', '    '],['key', 'runs-on'],['raw', ': '],['str', 'ubuntu-latest'],
+            ['raw', '    '],['key', 'steps'],['raw', ':'],
+            ['raw', '      - '],['key', 'name'],['raw', ': '],['str', 'Deploy to Kubernetes'],
+            ['raw', '        '],['key', 'run'],['raw', ': '],['val', 'kubectl apply -f k8s/ --record'],
+            ['raw', '      - '],['key', 'name'],['raw', ': '],['str', 'Trigger Airflow DAG'],
+            ['raw', '        '],['key', 'run'],['raw', ': '],['val', 'airflow dags trigger data_pipeline_dag']
+          ];
+
+          // Group consecutive items into lines
+          var output = '';
+          var currentLine = '';
+          var prevWasNewline = false;
+
+          // Simpler approach: build the full highlighted string
+          var html = '';
+          var i = 0;
+          while (i < lines.length) {
+            var type = lines[i][0];
+            var text = lines[i][1];
+            if (type === '') {
+              html += '\n';
+            } else if (type === 'raw') {
+              html += text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            } else {
+              var escaped = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+              html += '<span class="' + type + '">' + escaped + '</span>';
+            }
+            // add newline after each logical line end
+            if (i + 1 < lines.length) {
+              var next = lines[i+1][0];
+              // if current is not raw continuation, add newline
+            }
+            i++;
+          }
+
+          // Actually let's just build it line by line properly
+          var yamlLines = [
+            '<span class="cmt"># CI/CD Pipeline — DevOps + DataOps Portfolio</span>',
+            '',
+            '<span class="key">name</span>: <span class="str">Deploy Pipeline</span>',
+            '',
+            '<span class="key">on</span>:',
+            '  <span class="key">push</span>:',
+            '    <span class="key">branches</span>: [<span class="str">"main"</span>]',
+            '  <span class="key">pull_request</span>:',
+            '    <span class="key">branches</span>: [<span class="str">"main"</span>]',
+            '',
+            '<span class="key">jobs</span>:',
+            '  <span class="key">quality-gate</span>:',
+            '    <span class="key">runs-on</span>: <span class="str">ubuntu-latest</span>',
+            '    <span class="key">steps</span>:',
+            '      - <span class="key">uses</span>: <span class="val">actions/checkout@v4</span>',
+            '      - <span class="key">name</span>: <span class="str">Run data quality tests</span>',
+            '        <span class="key">run</span>: <span class="val">dbt test --profiles-dir . --target ci</span>',
+            '      - <span class="key">name</span>: <span class="str">Validate schemas</span>',
+            '        <span class="key">run</span>: <span class="val">great_expectations checkpoint run my_suite</span>',
+            '',
+            '  <span class="key">build-and-push</span>:',
+            '    <span class="key">needs</span>: <span class="str">quality-gate</span>',
+            '    <span class="key">runs-on</span>: <span class="str">ubuntu-latest</span>',
+            '    <span class="key">steps</span>:',
+            '      - <span class="key">name</span>: <span class="str">Build Docker image</span>',
+            '        <span class="key">run</span>: <span class="val">docker build -t $IMAGE_TAG .</span>',
+            '      - <span class="key">name</span>: <span class="str">Security scan</span>',
+            '        <span class="key">uses</span>: <span class="val">aquasecurity/trivy-action@master</span>',
+            '      - <span class="key">name</span>: <span class="str">Push to registry</span>',
+            '        <span class="key">run</span>: <span class="val">docker push $IMAGE_TAG</span>',
+            '',
+            '  <span class="key">deploy</span>:',
+            '    <span class="key">needs</span>: <span class="str">build-and-push</span>',
+            '    <span class="key">environment</span>: <span class="str">production</span>',
+            '    <span class="key">runs-on</span>: <span class="str">ubuntu-latest</span>',
+            '    <span class="key">steps</span>:',
+            '      - <span class="key">name</span>: <span class="str">Deploy to Kubernetes</span>',
+            '        <span class="key">run</span>: <span class="val">kubectl apply -f k8s/ --record</span>',
+            '      - <span class="key">name</span>: <span class="str">Trigger Airflow DAG</span>',
+            '        <span class="key">run</span>: <span class="val">airflow dags trigger data_pipeline_dag</span>'
+          ];
+          document.getElementById('yaml-code').innerHTML = yamlLines.join('\n');
+        </script>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="inner">
+      <div class="footer-left">
+        <span class="live-dot"></span>
+        Deployed via <span>GitHub Actions</span> · GitHub Pages
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com" target="_blank">GitHub</a>
+        <a href="#pipeline">Pipeline</a>
+        <a href="#stack">Stack</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
