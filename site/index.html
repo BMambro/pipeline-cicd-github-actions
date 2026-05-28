@@ -1,11 +1,40 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <title>Meu primeiro deploy automatizado</title>
-</head>
-<body>
-  <h1>Meu primeiro deploy automatizado</h1>
-  <p>Pipeline CI/CD criado com GitHub Actions e GitHub Pages.</p>
-</body>
-</html>
+# CI/CD Pipeline — DevOps + DataOps Portfolio
+
+name: Deploy Pipeline
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run data quality tests
+        run: dbt test --profiles-dir . --target ci
+      - name: Validate schemas
+        run: great_expectations checkpoint run my_suite
+
+  build-and-push:
+    needs: quality-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Docker image
+        run: docker build -t $IMAGE_TAG .
+      - name: Security scan
+        uses: aquasecurity/trivy-action@master
+      - name: Push to registry
+        run: docker push $IMAGE_TAG
+
+  deploy:
+    needs: build-and-push
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Kubernetes
+        run: kubectl apply -f k8s/ --record
+      - name: Trigger Airflow DAG
+        run: airflow dags trigger data_pipeline_dag
