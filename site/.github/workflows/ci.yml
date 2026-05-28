@@ -1,0 +1,19 @@
+name: CI - Validação do Projeto
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      - name: Validar index.html
+        run: test -f site/index.html
+
+      - name: Listar arquivos
+        run: ls -la site
